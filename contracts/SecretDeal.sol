@@ -12,6 +12,9 @@ contract SecretDeal is ZamaEthereumConfig {
     /// @notice Counter for generating unique deal IDs
     uint256 public dealCounter;
 
+    /// @notice Maximum length for deal names to prevent excessive gas costs
+    uint256 public constant MAX_DEAL_NAME_LENGTH = 256;
+
     /// @notice Structure representing a deal
     struct Deal {
         string dealName;
@@ -19,6 +22,7 @@ contract SecretDeal is ZamaEthereumConfig {
         uint256 createdAt;
         bool finalized;
         bool cancelled;
+        address creator;
         address[] parties;
     }
 
@@ -84,6 +88,7 @@ contract SecretDeal is ZamaEthereumConfig {
     ) external returns (uint256) {
         require(requiredParties > 0, "At least one party required");
         require(bytes(dealName).length > 0, "Deal name cannot be empty");
+        require(bytes(dealName).length <= MAX_DEAL_NAME_LENGTH, "Deal name too long");
 
         uint256 dealId = dealCounter++;
         
@@ -92,6 +97,7 @@ contract SecretDeal is ZamaEthereumConfig {
         deals[dealId].createdAt = block.timestamp;
         deals[dealId].finalized = false;
         deals[dealId].cancelled = false;
+        deals[dealId].creator = msg.sender;
 
         emit DealCreated(dealId, dealName, requiredParties, msg.sender);
 
@@ -193,13 +199,15 @@ contract SecretDeal is ZamaEthereumConfig {
     /// @return createdAt Timestamp when deal was created
     /// @return finalized Whether the deal is finalized
     /// @return cancelled Whether the deal is cancelled
+    /// @return creator The address that created the deal
     function getDeal(uint256 dealId) external view returns (
         string memory dealName,
         address[] memory parties,
         uint256 requiredParties,
         uint256 createdAt,
         bool finalized,
-        bool cancelled
+        bool cancelled,
+        address creator
     ) {
         Deal storage deal = deals[dealId];
         return (
@@ -208,7 +216,8 @@ contract SecretDeal is ZamaEthereumConfig {
             deal.requiredParties,
             deal.createdAt,
             deal.finalized,
-            deal.cancelled
+            deal.cancelled,
+            deal.creator
         );
     }
 
