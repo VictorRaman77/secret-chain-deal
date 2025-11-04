@@ -1,0 +1,162 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 220 20% 6%;
+    --foreground: 180 10% 95%;
+
+    --card: 220 18% 8%;
+    --card-foreground: 180 10% 95%;
+
+    --popover: 220 20% 10%;
+    --popover-foreground: 180 10% 95%;
+
+    --primary: 180 85% 55%;
+    --primary-foreground: 220 20% 6%;
+
+    --secondary: 220 15% 14%;
+    --secondary-foreground: 180 10% 95%;
+
+    --muted: 220 15% 12%;
+    --muted-foreground: 180 5% 60%;
+
+    --accent: 160 70% 50%;
+    --accent-foreground: 220 20% 6%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 180 10% 95%;
+
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 180 85% 55%;
+
+    --radius: 0.75rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(180 85% 55% / 0.15), hsl(160 70% 50% / 0.1));
+    --gradient-hero: linear-gradient(180deg, hsl(220 20% 6%), hsl(220 18% 10%));
+    --gradient-card: linear-gradient(145deg, hsl(220 18% 10%), hsl(220 18% 8%));
+    
+    --shadow-glow: 0 0 40px hsl(180 85% 55% / 0.25);
+    --shadow-card: 0 8px 32px hsl(220 20% 3% / 0.5);
+    --shadow-seal: 0 4px 20px hsl(180 85% 55% / 0.3);
+    
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Additional colors for special elements */
+    --wax-seal: 0 65% 45%;
+    --wax-seal-dark: 0 70% 35%;
+    --blockchain-glow: 180 100% 50%;
+    --table-surface: 35 30% 25%;
+    --parchment: 40 35% 90%;
+
+    /* Chart colors */
+    --chart-1: 180 85% 55%;
+    --chart-2: 160 70% 50%;
+    --chart-3: 200 80% 50%;
+    --chart-4: 140 60% 45%;
+    --chart-5: 220 60% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+/* Custom animations */
+@keyframes seal-break {
+  0% { transform: scale(1) rotate(0deg); opacity: 1; }
+  50% { transform: scale(1.1) rotate(5deg); opacity: 0.8; }
+  100% { transform: scale(0.8) rotate(180deg); opacity: 0; }
+}
+
+@keyframes document-reveal {
+  0% { transform: translateY(20px); opacity: 0; filter: blur(4px); }
+  100% { transform: translateY(0); opacity: 1; filter: blur(0); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-seal-break {
+  animation: seal-break 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.animate-document-reveal {
+  animation: document-reveal 0.8s ease-out;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out;
+}
+
+/* Background gradients */
+.bg-gradient-hero {
+  background: var(--gradient-hero);
+}
+
+.bg-gradient-card {
+  background: var(--gradient-card);
+}
+
+.bg-gradient-glow {
+  background: radial-gradient(circle, hsl(var(--primary) / 0.3), transparent 70%);
+}
+
+/* Shadow utilities */
+.shadow-seal {
+  box-shadow: var(--shadow-seal);
+}
+
+.shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
