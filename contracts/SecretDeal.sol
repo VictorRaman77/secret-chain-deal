@@ -15,6 +15,9 @@ contract SecretDeal is ZamaEthereumConfig {
     /// @notice Maximum length for deal names to prevent excessive gas costs
     uint256 public constant MAX_DEAL_NAME_LENGTH = 256;
 
+    /// @notice Maximum number of parties allowed per deal to prevent gas limit issues
+    uint256 public constant MAX_PARTIES_PER_DEAL = 100;
+
     /// @notice Structure representing a deal
     struct Deal {
         string dealName;
@@ -87,6 +90,7 @@ contract SecretDeal is ZamaEthereumConfig {
         uint256 requiredParties
     ) external returns (uint256) {
         require(requiredParties > 0, "At least one party required");
+        require(requiredParties <= MAX_PARTIES_PER_DEAL, "Too many required parties");
         require(bytes(dealName).length > 0, "Deal name cannot be empty");
         require(bytes(dealName).length <= MAX_DEAL_NAME_LENGTH, "Deal name too long");
 
@@ -123,6 +127,7 @@ contract SecretDeal is ZamaEthereumConfig {
         require(!deal.cancelled, "Deal has been cancelled");
         require(offers[dealId][msg.sender].party == address(0), "Offer already submitted");
         require(bytes(title).length > 0, "Title cannot be empty");
+        require(deal.parties.length < MAX_PARTIES_PER_DEAL, "Maximum parties reached");
 
         // Convert external encrypted input to internal euint32
         euint32 encryptedValue = FHE.fromExternal(inputEuint32, inputProof);
