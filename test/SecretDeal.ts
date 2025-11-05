@@ -389,5 +389,48 @@ describe("SecretDeal", function () {
       expect(offer.revealed).to.be.false;
     });
   });
+
+  describe("Boundary Conditions", function () {
+    it("should reject deal name exceeding max length", async function () {
+      const longName = "A".repeat(257); // MAX_DEAL_NAME_LENGTH is 256
+      await expect(
+        secretDealContract.connect(signers.alice).createDeal(longName, 2)
+      ).to.be.revertedWith("Deal name too long");
+    });
+
+    it("should accept deal name at max length", async function () {
+      const maxLengthName = "B".repeat(256);
+      const tx = await secretDealContract.connect(signers.alice).createDeal(maxLengthName, 2);
+      await tx.wait();
+
+      const dealId = (await secretDealContract.dealCounter()) - 1n;
+      const deal = await secretDealContract.getDeal(dealId);
+      expect(deal.dealName).to.equal(maxLengthName);
+    });
+
+    it("should reject required parties exceeding max limit", async function () {
+      await expect(
+        secretDealContract.connect(signers.alice).createDeal("Test Deal", 101) // MAX_PARTIES_PER_DEAL is 100
+      ).to.be.revertedWith("Too many required parties");
+    });
+
+    it("should accept required parties at max limit", async function () {
+      const tx = await secretDealContract.connect(signers.alice).createDeal("Max Parties Deal", 100);
+      await tx.wait();
+
+      const dealId = (await secretDealContract.dealCounter()) - 1n;
+      const deal = await secretDealContract.getDeal(dealId);
+      expect(deal.requiredParties).to.equal(100);
+    });
+
+    it("should store creator address correctly", async function () {
+      const tx = await secretDealContract.connect(signers.alice).createDeal("Creator Test", 2);
+      await tx.wait();
+
+      const dealId = (await secretDealContract.dealCounter()) - 1n;
+      const deal = await secretDealContract.getDeal(dealId);
+      expect(deal.creator).to.equal(signers.alice.address);
+    });
+  });
 });
 
