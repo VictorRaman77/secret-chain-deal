@@ -20,6 +20,9 @@ interface CreateOfferDialogProps {
   onCreateOffer: (title: string, description: string, value: number) => Promise<boolean>;
 }
 
+// Maximum value for euint32 (2^32 - 1)
+const MAX_OFFER_VALUE = 4294967295;
+
 export const CreateOfferDialog = ({ onCreateOffer }: CreateOfferDialogProps) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -46,6 +49,15 @@ export const CreateOfferDialog = ({ onCreateOffer }: CreateOfferDialogProps) => 
       toast({
         title: "Invalid Value",
         description: "Please enter a valid positive number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (numValue > MAX_OFFER_VALUE) {
+      toast({
+        title: "Value Too Large",
+        description: `Maximum offer value is ${MAX_OFFER_VALUE.toLocaleString()}`,
         variant: "destructive",
       });
       return;
