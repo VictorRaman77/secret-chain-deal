@@ -10,6 +10,16 @@ import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 contract FHECounter is ZamaEthereumConfig {
     euint32 private _count;
 
+    /// @notice Emitted when the counter is incremented
+    /// @param caller The address that called increment
+    /// @param newCount The new encrypted count handle
+    event CountIncremented(address indexed caller, euint32 newCount);
+
+    /// @notice Emitted when the counter is decremented
+    /// @param caller The address that called decrement
+    /// @param newCount The new encrypted count handle
+    event CountDecremented(address indexed caller, euint32 newCount);
+
     /// @notice Returns the current count
     /// @return The current encrypted count
     function getCount() external view returns (euint32) {
@@ -28,6 +38,8 @@ contract FHECounter is ZamaEthereumConfig {
 
         FHE.allowThis(_count);
         FHE.allow(_count, msg.sender);
+
+        emit CountIncremented(msg.sender, _count);
     }
 
     /// @notice Decrements the counter by a specified encrypted value.
@@ -42,5 +54,7 @@ contract FHECounter is ZamaEthereumConfig {
 
         FHE.allowThis(_count);
         FHE.allow(_count, msg.sender);
+
+        emit CountDecremented(msg.sender, _count);
     }
 }
