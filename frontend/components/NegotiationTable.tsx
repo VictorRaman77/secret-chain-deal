@@ -11,6 +11,7 @@ import { SecretDealAbi, getSecretDealAddress } from "@/lib/contracts";
 import { useFhevm } from "@/fhevm/useFhevm";
 import { Address, toHex } from "viem";
 import { ethers } from "ethers";
+import { Loader2 } from "lucide-react";
 
 interface Offer {
   party: Address;
@@ -37,6 +38,7 @@ export const NegotiationTable = () => {
   const { toast } = useToast();
   const [dealId] = useState<number>(0);
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [isLoadingOffers, setIsLoadingOffers] = useState<boolean>(false);
   
   const contractAddress = getSecretDealAddress(chainId);
   
@@ -75,28 +77,33 @@ export const NegotiationTable = () => {
   const loadOffers = useCallback(async (parties: Address[]) => {
     if (!contractAddress || !publicClient) return;
     
+    setIsLoadingOffers(true);
     const loadedOffers: Offer[] = [];
-    for (const party of parties) {
-      try {
-        const offer = await publicClient.readContract({
-          address: contractAddress,
-          abi: SecretDealAbi,
-          functionName: 'getOfferByParty',
-          args: [BigInt(dealId), party],
-        }) as OfferContractResult;
-        
-        loadedOffers.push({
-          party,
-          revealed: offer[3],
-          title: offer[4],
-          description: offer[5],
-          timestamp: offer[2],
-        });
-      } catch (error) {
-        console.error(`Failed to load offer for ${party}:`, error);
+    try {
+      for (const party of parties) {
+        try {
+          const offer = await publicClient.readContract({
+            address: contractAddress,
+            abi: SecretDealAbi,
+            functionName: 'getOfferByParty',
+            args: [BigInt(dealId), party],
+          }) as OfferContractResult;
+          
+          loadedOffers.push({
+            party,
+            revealed: offer[3],
+            title: offer[4],
+            description: offer[5],
+            timestamp: offer[2],
+          });
+        } catch (error) {
+          console.error(`Failed to load offer for ${party}:`, error);
+        }
       }
+      setOffers(loadedOffers);
+    } finally {
+      setIsLoadingOffers(false);
     }
-    setOffers(loadedOffers);
   }, [contractAddress, publicClient, dealId]);
   
   useEffect(() => {
@@ -318,7 +325,12 @@ export const NegotiationTable = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {offers.length === 0 ? (
+          {isLoadingOffers ? (
+            <div className="col-span-3 flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+              <p className="text-lg text-muted-foreground">Loading offers...</p>
+            </div>
+          ) : offers.length === 0 ? (
             <div className="col-span-3 text-center py-12">
               <p className="text-lg text-muted-foreground">No offers submitted yet</p>
               <p className="text-sm text-muted-foreground mt-2">Be the first to submit an encrypted offer</p>
