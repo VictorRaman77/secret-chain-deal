@@ -11,7 +11,7 @@ import { SecretDealAbi, getSecretDealAddress } from "@/lib/contracts";
 import { useFhevm } from "@/fhevm/useFhevm";
 import { Address, toHex } from "viem";
 import { ethers } from "ethers";
-import { Loader2 } from "lucide-react";
+import { Loader2, Copy, Check } from "lucide-react";
 
 interface Offer {
   party: Address;
@@ -39,6 +39,25 @@ export const NegotiationTable = () => {
   const [dealId] = useState<number>(0);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [isLoadingOffers, setIsLoadingOffers] = useState<boolean>(false);
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+
+  const copyToClipboard = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopiedAddress(address);
+      setTimeout(() => setCopiedAddress(null), 2000);
+      toast({
+        title: "Address Copied",
+        description: "Wallet address copied to clipboard",
+      });
+    } catch {
+      toast({
+        title: "Copy Failed",
+        description: "Could not copy address to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
   
   const contractAddress = getSecretDealAddress(chainId);
   
@@ -344,9 +363,18 @@ export const NegotiationTable = () => {
                 <h3 className="text-lg font-semibold text-parchment">
                   Party {index + 1}
                 </h3>
-                <p className="text-xs text-muted-foreground font-mono">
-                  {offer.party.slice(0, 6)}...{offer.party.slice(-4)}
-                </p>
+                <button
+                  onClick={() => copyToClipboard(offer.party)}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono hover:text-foreground transition-colors group"
+                  title="Click to copy full address"
+                >
+                  <span>{offer.party.slice(0, 6)}...{offer.party.slice(-4)}</span>
+                  {copiedAddress === offer.party ? (
+                    <Check className="w-3 h-3 text-green-500" />
+                  ) : (
+                    <Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
+                </button>
                 
                 {!offer.revealed ? (
                   <div className="flex flex-col items-center space-y-4">
