@@ -48,6 +48,9 @@ contract SecretDeal is ZamaEthereumConfig {
     /// @notice Mapping from deal ID to offer count
     mapping(uint256 => uint256) public offerCount;
 
+    /// @notice Mapping from party address to array of deal IDs they participate in
+    mapping(address => uint256[]) private partyDeals;
+
     /// @notice Emitted when a new deal is created
     event DealCreated(
         uint256 indexed dealId,
@@ -145,6 +148,9 @@ contract SecretDeal is ZamaEthereumConfig {
         // Add party to the deal's party list
         deal.parties.push(msg.sender);
         offerCount[dealId]++;
+
+        // Track this deal for the party
+        partyDeals[msg.sender].push(dealId);
 
         // Allow this contract to access the encrypted value
         FHE.allowThis(encryptedValue);
@@ -306,6 +312,20 @@ contract SecretDeal is ZamaEthereumConfig {
     /// @return The count of parties
     function getPartyCount(uint256 dealId) external view returns (uint256) {
         return deals[dealId].parties.length;
+    }
+
+    /// @notice Gets all deal IDs that a party has participated in
+    /// @param party The address of the party
+    /// @return An array of deal IDs
+    function getDealsByParty(address party) external view returns (uint256[] memory) {
+        return partyDeals[party];
+    }
+
+    /// @notice Gets the number of deals a party has participated in
+    /// @param party The address of the party
+    /// @return The count of deals
+    function getPartyDealCount(address party) external view returns (uint256) {
+        return partyDeals[party].length;
     }
 }
 
