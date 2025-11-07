@@ -182,3 +182,63 @@ task("task:decrement", "Calls the decrement() function of FHECounter Contract")
 
     console.log(`FHECounter decrement(${value}) succeeded!`);
   });
+
+/**
+ * Example:
+ *   - npx hardhat --network localhost task:batch-increment --values "1,2,3"
+ *   - npx hardhat --network sepolia task:batch-increment --values "5,10,15"
+ */
+task("task:batch-increment", "Performs multiple increments in sequence")
+  .addOptionalParam("address", "Optionally specify the FHECounter contract address")
+  .addParam("values", "Comma-separated list of increment values")
+  .setAction(async function (taskArguments: TaskArguments, hre) {
+    const { ethers, deployments, fhevm } = hre;
+
+    const valuesString = taskArguments.values as string;
+    const values = valuesString.split(",").map((v: string) => {
+      const parsed = parseInt(v.trim());
+      if (!Number.isInteger(parsed) || parsed <= 0) {
+        throw new Error(`Invalid value in list: ${v}`);
+      }
+      return parsed;
+    });
+
+    console.log(`Batch increment with ${values.length} values: [${values.join(", ")}]`);
+
+    await fhevm.initializeCLIApi();
+
+    const FHECounterDeployement = taskArguments.address
+      ? { address: taskArguments.address }
+      : await deployments.get("FHECounter");
+    console.log(`FHECounter: ${FHECounterDeployement.address}`);
+
+    const signers = await ethers.getSigners();
+    const fheCounterContract = await ethers.getContractAt("FHECounter", FHECounterDeployement.address);
+
+    let totalIncremented = 0;
+    for (let i = 0; i < values.length; i++) {
+      const value = values[i];
+      console.log(`\n[${i + 1}/${values.length}] Encrypting value ${value}...`);
+
+      const encryptedValue = await fhevm
+        .createEncryptedInput(FHECounterDeployement.address, signers[0].address)
+        .add32(value)
+        .encrypt();
+
+      console.log(`[${i + 1}/${values.length}] Calling increment(${value})...`);
+      const tx = await fheCounterContract
+        .connect(signers[0])
+        .increment(encryptedValue.handles[0], encryptedValue.inputProof);
+      
+      console.log(`[${i + 1}/${values.length}] Waiting for tx:${tx.hash}...`);
+      const receipt = await tx.wait();
+      console.log(`[${i + 1}/${values.length}] tx confirmed, status=${receipt?.status}`);
+
+      totalIncremented += value;
+    }
+
+    const finalEncryptedCount = await fheCounterContract.getCount();
+    console.log(`\n✅ Batch increment completed!`);
+    console.log(`   Total incremented: ${totalIncremented}`);
+    console.log(`   Final encrypted count handle: ${finalEncryptedCount}`);
+  });
