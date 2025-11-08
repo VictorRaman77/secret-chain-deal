@@ -101,4 +101,90 @@ describe("FHECounter", function () {
 
     expect(clearCountAfterInc).to.eq(0);
   });
+
+  it("increment with larger value", async function () {
+    // Encrypt a larger value
+    const largeValue = 1000;
+    const encryptedLarge = await fhevm
+      .createEncryptedInput(fheCounterContractAddress, signers.alice.address)
+      .add32(largeValue)
+      .encrypt();
+
+    const tx = await fheCounterContract
+      .connect(signers.alice)
+      .increment(encryptedLarge.handles[0], encryptedLarge.inputProof);
+    await tx.wait();
+
+    const encryptedCount = await fheCounterContract.getCount();
+    const clearCount = await fhevm.userDecryptEuint(
+      FhevmType.euint32,
+      encryptedCount,
+      fheCounterContractAddress,
+      signers.alice,
+    );
+
+    expect(clearCount).to.eq(largeValue);
+  });
+
+  it("multiple increments accumulate correctly", async function () {
+    const values = [5, 10, 15];
+    let expectedTotal = 0;
+
+    for (const val of values) {
+      const encrypted = await fhevm
+        .createEncryptedInput(fheCounterContractAddress, signers.alice.address)
+        .add32(val)
+        .encrypt();
+
+      const tx = await fheCounterContract
+        .connect(signers.alice)
+        .increment(encrypted.handles[0], encrypted.inputProof);
+      await tx.wait();
+      expectedTotal += val;
+    }
+
+    const encryptedCount = await fheCounterContract.getCount();
+    const clearCount = await fhevm.userDecryptEuint(
+      FhevmType.euint32,
+      encryptedCount,
+      fheCounterContractAddress,
+      signers.alice,
+    );
+
+    expect(clearCount).to.eq(expectedTotal);
+  });
+
+  it("different users can interact with the counter", async function () {
+    // Alice increments
+    const encryptedAlice = await fhevm
+      .createEncryptedInput(fheCounterContractAddress, signers.alice.address)
+      .add32(7)
+      .encrypt();
+
+    let tx = await fheCounterContract
+      .connect(signers.alice)
+      .increment(encryptedAlice.handles[0], encryptedAlice.inputProof);
+    await tx.wait();
+
+    // Bob increments
+    const encryptedBob = await fhevm
+      .createEncryptedInput(fheCounterContractAddress, signers.bob.address)
+      .add32(3)
+      .encrypt();
+
+    tx = await fheCounterContract
+      .connect(signers.bob)
+      .increment(encryptedBob.handles[0], encryptedBob.inputProof);
+    await tx.wait();
+
+    const encryptedCount = await fheCounterContract.getCount();
+    const clearCount = await fhevm.userDecryptEuint(
+      FhevmType.euint32,
+      encryptedCount,
+      fheCounterContractAddress,
+      signers.alice,
+    );
+
+    expect(clearCount).to.eq(10); // 7 + 3
+  });
 });
