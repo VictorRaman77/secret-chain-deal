@@ -189,17 +189,26 @@ contract SecretDeal is ZamaEthereumConfig {
         emit DealFinalized(dealId, block.timestamp);
     }
 
-    /// @notice Cancels a deal
+    /// @notice Cancels a deal (only the creator can cancel)
     /// @param dealId The ID of the deal
     function cancelDeal(uint256 dealId) external {
         Deal storage deal = deals[dealId];
         
+        require(deal.creator == msg.sender, "Only creator can cancel deal");
         require(!deal.finalized, "Cannot cancel finalized deal");
         require(!deal.cancelled, "Deal already cancelled");
 
         deal.cancelled = true;
 
         emit DealCancelled(dealId, msg.sender);
+    }
+
+    /// @notice Checks if an address is the creator of a deal
+    /// @param dealId The ID of the deal
+    /// @param account The address to check
+    /// @return Whether the account is the creator
+    function isCreator(uint256 dealId, address account) external view returns (bool) {
+        return deals[dealId].creator == account;
     }
 
     /// @notice Gets deal information
