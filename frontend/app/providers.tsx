@@ -17,8 +17,28 @@ type Props = {
   children: ReactNode;
 };
 
+// Configuration constants for better reliability
+const RETRY_COUNT = 3;
+const RETRY_DELAY = 1000;
+const REQUEST_TIMEOUT = 30000;
+
 export function Providers({ children }: Props) {
-  const [queryClient] = useState(() => new QueryClient());
+  // Configure QueryClient with retry and stale time settings
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: RETRY_COUNT,
+        retryDelay: (attemptIndex) => Math.min(RETRY_DELAY * 2 ** attemptIndex, 30000),
+        staleTime: 5000,
+        gcTime: 10 * 60 * 1000, // 10 minutes
+        refetchOnWindowFocus: false,
+      },
+      mutations: {
+        retry: RETRY_COUNT - 1,
+        retryDelay: RETRY_DELAY,
+      },
+    },
+  }));
 
   // Build readonly RPC map for FHEVM usage (avoid routing reads via wallet)
   const localUrl = process.env.NEXT_PUBLIC_LOCAL_RPC_URL || "http://127.0.0.1:8545";
@@ -36,9 +56,22 @@ export function Providers({ children }: Props) {
   // Wagmi + RainbowKit
   // Important: Provide transports for the full union of possible chain ids
   // even if Sepolia is not included in `chains`, to satisfy Wagmi's typing.
+  // Configure transports with retry and timeout settings
   const transports = {
-    [hardhat.id]: http(localUrl),
-    [sepolia.id]: http(sepoliaUrl),
+    [hardhat.id]: http(localUrl, {
+      retryCount: RETRY_COUNT,
+      retryDelay: RETRY_DELAY,
+      timeout: REQUEST_TIMEOUT,
+    }),
+    [sepolia.id]: http(sepoliaUrl, {
+      retryCount: RETRY_COUNT,
+      retryDelay: RETRY_DELAY,
+      timeout: REQUEST_TIMEOUT,
+      batch: {
+        batchSize: 100,
+        wait: 20,
+      },
+    }),
   } as const;
 
   // Always include Sepolia in chain list so RainbowKit modal shows both
@@ -49,6 +82,12 @@ export function Providers({ children }: Props) {
     connectors: [injected()],
     transports,
     ssr: true,
+    batch: {
+      multicall: {
+        batchSize: 1024,
+        wait: 16,
+      },
+    },
   });
 
   return (
